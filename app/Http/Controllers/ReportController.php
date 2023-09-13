@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\CheckStockLevelResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ReportSaleResource;
+use App\Http\Resources\TodaySaleProductReportResource;
 use App\Models\Brand;
 use App\Models\DailySale;
 use App\Models\MonthlySale;
@@ -27,7 +28,6 @@ class ReportController extends Controller
         $startOfDay =  Carbon::now()->startOfWeek();
         $endOfDay = $startOfDay->copy()->endOfWeek();
         $totalSale = DailySale::whereBetween('created_at', [$startOfDay, $endOfDay])->get();
-
         // Yearly Sale Chart
         if ($request->has('year')) {
             $totalSale =  MonthlySale::whereYear('created_at', now())->get();
@@ -98,9 +98,9 @@ class ReportController extends Controller
         $date = now();
         $todaySaleProducts = Voucher::whereDate('created_at', $date)->get();
         $todayTotal = $todaySaleProducts->sum('total');
-        $todayMaxSale = $todaySaleProducts->max('total');
+        $todayMaxSale = $todaySaleProducts->where('total' , $todaySaleProducts->max('total'))->first();
         $todayAvgSale = $todaySaleProducts->avg('total');
-        $todayMinSale = $todaySaleProducts->min('total');
+        $todayMinSale = $todaySaleProducts->where('total' , $todaySaleProducts->min('total'))->first();
 
         // Product Sale
         $products = Product::when(request()->has('price'), function ($query) {
@@ -110,9 +110,9 @@ class ReportController extends Controller
         return response()->json([
             "today_sales" => [
                 "total" => $todayTotal,
-                "today_max_sale" => $todayMaxSale,
+                "today_max_sale" => new TodaySaleProductReportResource($todayMaxSale),
                 "today_avg_sale" => round($todayAvgSale),
-                "today_min_sale" => $todayMinSale,
+                "today_min_sale" => new TodaySaleProductReportResource($todayMinSale),
             ],
 
             "brand_sales" => $this->brandSales($brandDate),
