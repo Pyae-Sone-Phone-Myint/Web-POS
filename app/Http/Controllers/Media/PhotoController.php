@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Media;
 
+use App\Http\Controllers\Controller;
 use App\Models\Photo;
 use App\Http\Requests\StorePhotoRequest;
 use App\Http\Requests\UpdatePhotoRequest;
@@ -21,9 +22,7 @@ class PhotoController extends Controller
      */
     public function index()
     {
-        $photos = Photo::when(Auth::user()->role !== "admin", function ($query) {
-            $query->where("user_id", Auth::id());
-        })->latest("id")->get();
+        $photos = Photo::latest("id")->get();
 
         if (empty($photos->toArray())) {
             return response()->json([
